@@ -12,6 +12,7 @@
       align-items: center;
       height: 100vh;
       justify-content: center;
+      font-family: sans-serif;
     }
 
     #radar {
@@ -49,14 +50,20 @@
       z-index: 2;
     }
 
-    #alarma {
-      margin-top: 15px;
-      padding: 10px 20px;
-      color: white;
-      font-weight: bold;
+    #pantallaAlarma {
       display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 36px;
+      font-weight: bold;
+      text-align: center;
       animation: parpadeo 1s infinite;
-      border-radius: 8px;
     }
 
     @keyframes parpadeo {
@@ -69,7 +76,6 @@
       max-height: 120px;
       overflow-y: auto;
       width: 400px;
-      font-family: sans-serif;
       font-size: 14px;
     }
 
@@ -97,20 +103,30 @@
 
 <button onclick="window.location.href = 'index.html';">Volver</button>
 
+<div id="pantallaAlarma"></div>
 <div id="radar"></div>
-<div id="alarma"></div>
 <div id="notificaciones"></div>
 <button id="randomMoveBtn">Mover Objetivo Aleatoriamente</button>
 
 <script>
   const radar = document.getElementById("radar");
-  const alarma = document.getElementById("alarma");
+  const pantallaAlarma = document.getElementById("pantallaAlarma");
   const notificaciones = document.getElementById("notificaciones");
   const btn = document.getElementById("randomMoveBtn");
 
   let posX = 200;
   let posY = 50;
   let randomMoveInterval = null;
+
+  // 🎵 Inicializa el contexto de audio sólo una vez
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      console.log("AudioContext inicializado");
+    }
+  }
 
   const circles = [];
   const radii = [50, 100, 150];
@@ -142,10 +158,10 @@
   function checkDistance() {
     const dx = posX - 200;
     const dy = posY - 200;
-    const distance = Math.sqrt(dx*dx + dy*dy);
+    const distance = Math.sqrt(dx * dx + dy * dy);
     let nivel = "";
 
-    // Reset all circles to green
+    // Reset circles
     circles.forEach(c => c.element.style.borderColor = "#0f0");
 
     if (distance < 50) {
@@ -162,41 +178,75 @@
       circles[2].element.style.borderColor = "red";
     }
 
-    showAlarma(nivel);
+    if (nivel) {
+      showAlarmaPantallaCompleta(nivel);
+      reproducirSonidoPorNivel(nivel);
+    } else {
+      pantallaAlarma.style.display = "none";
+    }
   }
 
-  function showAlarma(nivel) {
-    let texto = "";
-    let clase = "";
+  function showAlarmaPantallaCompleta(nivel) {
+    let mensaje = "";
+    let color = "";
 
     if (nivel === "alto") {
-      texto = "🔴 ¡ALERTA MÁXIMA! Vehículo muy cerca";
-      clase = "nivel-alto";
+      mensaje = "🚨 ¡ALERTA MÁXIMA! Vehículo muy cerca";
+      color = "crimson";
     } else if (nivel === "media") {
-      texto = "🟠 Alerta media: vehículo acercándose";
-      clase = "nivel-media";
+      mensaje = "⚠️ Alerta media: vehículo acercándose";
+      color = "red";
     } else if (nivel === "bajo") {
-      texto = "🟡 Vehículo detectado en zona lejana";
-      clase = "nivel-bajo";
-    } else {
-      alarma.style.display = "none";
-      alarma.className = "";
-      return;
+      mensaje = "🟠 Vehículo detectado en zona lejana";
+      color = "orange";
     }
 
-    if (alarma.textContent !== texto) {
-      const hora = new Date().toLocaleTimeString();
-      const log = document.createElement("div");
-      log.textContent = `${texto} - ${hora}`;
-      notificaciones.appendChild(log);
+    pantallaAlarma.textContent = mensaje;
+    pantallaAlarma.style.backgroundColor = color;
+    pantallaAlarma.style.display = "flex";
+
+    const hora = new Date().toLocaleTimeString();
+    const log = document.createElement("div");
+    log.textContent = `${mensaje} - ${hora}`;
+    notificaciones.appendChild(log);
+
+    setTimeout(() => {
+      pantallaAlarma.style.display = "none";
+    }, 3000);
+  }
+
+  function reproducirSonidoPorNivel(nivel) {
+    if (!audioCtx) return;
+
+    function beep(freq, duration, volume = 0.5) {
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.value = freq;
+      gainNode.gain.value = volume;
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + duration / 1000);
     }
 
-    alarma.textContent = texto;
-    alarma.className = clase;
-    alarma.style.display = "block";
+    if (nivel === "bajo") {
+      beep(300, 300, 0.3);
+    } else if (nivel === "media") {
+      beep(600, 200, 0.5);
+      setTimeout(() => beep(600, 200, 0.5), 250);
+    } else if (nivel === "alto") {
+      beep(1000, 150, 0.8);
+      setTimeout(() => beep(1000, 150, 0.8), 200);
+      setTimeout(() => beep(1000, 150, 0.8), 400);
+    }
   }
 
   document.addEventListener("keydown", e => {
+    initAudio(); // ⬅️ Activa audio con interacción del usuario
     const step = 5;
     if (e.key === "ArrowUp") posY -= step;
     if (e.key === "ArrowDown") posY += step;
@@ -210,6 +260,7 @@
   });
 
   btn.addEventListener("click", () => {
+    initAudio(); // ⬅️ También activa audio desde botón
     if (randomMoveInterval) {
       clearInterval(randomMoveInterval);
       randomMoveInterval = null;
