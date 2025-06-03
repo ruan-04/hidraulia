@@ -465,6 +465,7 @@ function showDeviceList(deviceIds) {
   });
 }
 
+
 function renderAlarmas(filter = 'todas') {
   const lang = translations[currentLanguage];
   let filteredAlarmas = alarmasData;
