@@ -359,6 +359,7 @@ a:</span> <input type="color" value="#f0ad4e" /></div>
     </div>
     
   `;
+  
 
   document.getElementById('carIcon').addEventListener('click', () =>{
     window.open('/usuarios.html', '_blank');
