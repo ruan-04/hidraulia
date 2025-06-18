@@ -2,7 +2,40 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import maplibregl from 'maplibre-gl';
 import './style.css';
 
-const userEmail = "tu.email@ejemplo.com";
+let userEmail = ""; // se definirá tras login
+
+function showLoginModal() {
+  const loginModal = document.createElement('div');
+  loginModal.id = "loginModal";
+  loginModal.className = "modal";
+  loginModal.innerHTML = `
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <h2>Iniciar Sesión</h2>
+      <p>Por favor, introduzca su correo electrónico</p>
+      <input type="email" id="loginEmail" placeholder="Correo electrónico" style="width: 100%; margin: 1em 0;" />
+      <button id="loginBtn" class="toolbar-btn">Iniciar sesión</button>
+    </div>
+  `;
+  document.body.appendChild(loginModal);
+
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    const emailInput = document.getElementById('loginEmail').value.trim();
+    // Validar si el correo tiene un '@' en él
+    if (emailInput !== "" && emailInput.includes('@')) {
+      userEmail = emailInput;
+      document.body.removeChild(loginModal);
+      renderApp();
+    } else {
+      alert("Por favor, ingrese un correo válido con '@'.");
+    }
+  });
+}
+
+// Mostrar modal al cargar
+document.addEventListener("DOMContentLoaded", () => {
+  showLoginModal();
+});
+
 
 // Traducciones
 const translations = {
